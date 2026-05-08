@@ -1,5 +1,3 @@
-name: Java CI/CD with SAST
-
 on:
   pull_request:
     branches:
@@ -46,4 +44,22 @@ jobs:
         with:
           name: semgrep-report
           path: semgrep.sarif
+        if: always()
+
+  dependency-check:
+    name: OWASP Dependency Check
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Dependency Check
+        run: mvn org.owasp:dependency-check-maven:check
+
+      - name: Upload Dependency Check report
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-check-report
+          path: target/dependency-check-report.html
         if: always()
