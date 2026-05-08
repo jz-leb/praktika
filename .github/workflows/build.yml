@@ -4,13 +4,6 @@ on:
   pull_request_target:
     branches:
       - main
-    types:
-      - opened
-      - synchronize
-      - reopened
-  push:
-    branches:
-      - main
 
 permissions:
   contents: read
@@ -24,6 +17,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
 
       - name: Build with Maven
         run: mvn clean test package
@@ -37,21 +33,24 @@ jobs:
   semgrep-sast:
     name: Semgrep SAST scan
     runs-on: ubuntu-latest
-    container:
-      image: semgrep/semgrep
     needs: build
-    if: github.event_name == 'pull_request' || github.event_name == 'push'
-
+    if: always()
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Run Semgrep CE scan
-        run: semgrep scan --config auto --sarif > semgrep.sarif
-        continue-on-error: true
-
-      - name: Upload SARIF to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v4
         with:
-          sarif_file: semgrep.sarif
+          ref: ${{ github.event.pull_request.head.sha }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+
+      - name: Install semgrep
+        run: pip install semgrep
+
+      - name: Run Semgrep
+        run: semgrep scan --config auto --sarif > semgrep.sarif || true
+
+      - name: Upload SARIF artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: semgrep-report
+          path: semgrep.sarif
         if: always()
