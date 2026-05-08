@@ -1,14 +1,7 @@
 name: Java CI/CD with SAST
 
 on:
-  pull_request_target:
-    branches:
-      - main
-    types:
-      - opened
-      - synchronize
-      - reopened
-  push:
+  pull_request:
     branches:
       - main
 
@@ -37,21 +30,20 @@ jobs:
   semgrep-sast:
     name: Semgrep SAST scan
     runs-on: ubuntu-latest
-    container:
-      image: semgrep/semgrep
     needs: build
-    if: github.event_name == 'pull_request' || github.event_name == 'push'
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Run Semgrep CE scan
-        run: semgrep scan --config auto --sarif > semgrep.sarif
-        continue-on-error: true
+      - name: Install semgrep
+        run: pip install semgrep
 
-      - name: Upload SARIF to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v4
+      - name: Run Semgrep
+        run: semgrep scan --config auto --sarif > semgrep.sarif || true
+
+      - name: Upload SARIF artifact
+        uses: actions/upload-artifact@v4
         with:
-          sarif_file: semgrep.sarif
+          name: semgrep-report
+          path: semgrep.sarif
         if: always()
