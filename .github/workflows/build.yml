@@ -34,7 +34,6 @@ jobs:
     name: Semgrep SAST scan
     runs-on: ubuntu-latest
     needs: build
-    if: always()
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
